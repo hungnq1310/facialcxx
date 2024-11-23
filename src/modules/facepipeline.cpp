@@ -1,4 +1,6 @@
-#include "facedetectionandspoofing.h"
+// Continue to update
+
+#include "facepipeline.h"
 #include <iostream>
 
 FaceDetectionAndSpoofing::FaceDetectionAndSpoofing(const std::string& face_model_path, const std::string& spoof_model_path)
