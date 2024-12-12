@@ -19,7 +19,7 @@ void cropFace(
     int out_height, int out_width
 ); 
 
-class Spoofing
+class Spoofing : public Pipeline
 {
     protected:
         shared_ptr<Model> extractor;
@@ -30,7 +30,7 @@ class Spoofing
         void preprocess(cv::Mat input, cv::Mat &output);
         std::vector<float> postprocess(std::vector<float> input);
         std::vector<float> inference(cv::Mat input);
-        Ort::Value createOrtValueFromMat(const cv::Mat& mat);
+        Ort::Value createOrtValueFromMat(cv::Mat& mat);
     };
 
 #endif // SPOOFING_H

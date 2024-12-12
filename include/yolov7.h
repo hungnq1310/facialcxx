@@ -4,10 +4,12 @@
 #include "onnxruntime_cxx_api.h"
 #include <opencv2/opencv.hpp>
 #include "ortcxx/model.h"
+#include "ortcxx/pipeline.h"
 
 using namespace cv;
 using namespace std;
 using namespace ortcxx::model;
+using namespace ortcxx::pipeline;
 
 struct PredictResultHeadFace
 {
@@ -21,7 +23,7 @@ struct PredictResultHeadFace
     float keypoints[10];
 };
 
-class YoloV7 {
+class YoloV7 : Pipeline {
     public:
         YoloV7(shared_ptr<Model> yolo);
         ~YoloV7();
