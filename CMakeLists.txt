@@ -15,11 +15,11 @@ set_target_properties(
     lib_ortcxx PROPERTIES 
     IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/libs/ortcxx/libs/libortcxx.so
 )
-set(LIB_ORTCXX_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/libs/ortcxx/headers)
+set(LIB_ORTCXX_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/libs/ortcxx/include)
 
 # Onnxruntime
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/onnxruntime_1.19.0/lib/)
-set(onnxruntime_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs/onnxruntime_1.19.0/include)
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/onnxruntime/lib/)
+set(onnxruntime_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs/onnxruntime/include)
 
 # Debug
 message(STATUS ${OpenCV_INCLUDE_DIRS})
