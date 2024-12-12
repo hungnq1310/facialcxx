@@ -43,17 +43,14 @@ std::vector<float> Spoofing::postprocess(std::vector<float> input) {
 
     // Apply softmax
     std::vector<float> softmax_output(input.size());
-    // float max_val = *std::max_element(input.begin(), input.end());
-    float sum = 0.0f;
-    for (size_t i = 0; i < input.size(); ++i) {
-        // softmax_output[i] = std::exp(input[i] - max_val);
+    for (size_t i = 0; i < input.size(); i+=2) {
         softmax_output[i] = std::exp(input[i]);
-        sum += softmax_output[i];
-    }
-    for (size_t i = 0; i < input.size(); ++i) {
+        softmax_output[i+1] = std::exp(input[i+1]);
+        // call softmax
+        float sum = softmax_output[i] + softmax_output[i+1];
         softmax_output[i] /= sum;
+        softmax_output[i+1] /= sum;        
     }
-
     return softmax_output;
 }
 
@@ -105,19 +102,28 @@ std::vector<float> Spoofing::inference(cv::Mat input) {
 }
 
 Ort::Value Spoofing::createOrtValueFromMat(const cv::Mat& mat) {
-    // Implement conversion from cv::Mat to Ort::Value
-    // Example: create a tensor from the image data
-    std::vector<int64_t> dims = {1, mat.channels(), mat.rows, mat.cols}; //!FIX HERRE
-    size_t tensor_size = mat.total() * mat.elemSize();
+    // Ensure the input mat is of type CV_32F
+    cv::Mat input;
+    if (mat.type() != CV_32F) {
+        mat.convertTo(input, CV_32F);
+    } else {
+        input = mat;
+    }
+
+    // Get the dimensions of the input mat
+    std::vector<int64_t> dims = {1, input.channels(), input.rows, input.cols};
+
+    // Create an Ort::MemoryInfo object
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    Ort::Value tensor = Ort::Value::CreateTensor<float>(
-        memory_info, 
-        const_cast<float*>(mat.ptr<float>()), 
-        tensor_size, 
-        dims.data(), 
+
+    // Create an Ort::Value tensor from the input mat data
+    return Ort::Value::CreateTensor<float>(
+        memory_info,
+        input.ptr<float>(),
+        input.total() * input.channels(),
+        dims.data(),
         dims.size()
     );
-    return tensor;
 }
 
 
