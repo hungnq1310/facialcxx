@@ -136,6 +136,7 @@ void cropFace(cv::Mat src, cv::Mat& dst, cv::Rect rectPoint, int out_height, int
         rectPoint.height = src.rows;
     }
     // crop
-    Mat ROI(src, rectPoint);
-    dst = ROI.clone();
+    dst = src(
+        rectPoint
+    );
 }
