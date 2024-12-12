@@ -20,21 +20,21 @@ Spoofing::Spoofing(shared_ptr<Model> extractor, shared_ptr<Model> classifier)
 void Spoofing::preprocess(cv::Mat input, cv::Mat &output) {
     // Implement preprocessing logic here
     std::cout << "Spoofing Preprocessing..." << std::endl;
-    cv::cvtColor(input, input, cv::COLOR_BGR2RGB);
-    //resize
-    cv::Mat resized_image;
-    cv::resize(input, resized_image, cv::Size(256, 256));
-    cv::imwrite("/home/tiennv/hungnq/facialcxx/resized_image.jpg", resized_image);
-    // Normalize the image 0- 1
-    resized_image.convertTo(resized_image, CV_32F, 1.0 / 255.0);
-    // NEED TO FIX 0.5 / 0.5 ?
-    resized_image = (resized_image - 0.5) / 0.5;
-    
-    cv::Mat scale_image;
-    resized_image.convertTo(scale_image, CV_32F);
-    cv::imwrite("/home/tiennv/hungnq/facialcxx/normalized_image.jpg", scale_image);
 
-    output = resized_image;
+    // Convert BGR to RGB
+    cv::cvtColor(input, input, cv::COLOR_BGR2RGB);
+
+    // Resize the image to (256, 256)
+    cv::resize(input, input, cv::Size(256, 256), 0, 0, cv::INTER_LINEAR);
+
+    // Convert the image to float and scale to [0, 1]
+    input.convertTo(input, CV_32FC1, 1.0 / 255.0);
+
+    // Normalize the image with mean [0.5, 0.5, 0.5] and std [0.5, 0.5, 0.5]
+    input = (input - 0.5) / 0.5;
+
+    // Assign the processed image to output
+    output = input;
 }
 
 std::vector<float> Spoofing::postprocess(std::vector<float> input) {
