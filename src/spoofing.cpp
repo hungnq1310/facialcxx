@@ -18,21 +18,14 @@ Spoofing::Spoofing(shared_ptr<Model> extractor, shared_ptr<Model> classifier)
 }
 
 void Spoofing::preprocess(cv::Mat input, cv::Mat &output) {
-    // Implement preprocessing logic here
-    std::cout << "Spoofing Preprocessing..." << std::endl;
-
     // Convert BGR to RGB
     cv::cvtColor(input, input, cv::COLOR_BGR2RGB);
-
     // Resize the image to (256, 256)
     cv::resize(input, input, cv::Size(256, 256), 0, 0, cv::INTER_LINEAR);
-
     // Convert the image to float and scale to [0, 1]
     input.convertTo(input, CV_32FC1, 1.0 / 255.0);
-
     // Normalize the image with mean [0.5, 0.5, 0.5] and std [0.5, 0.5, 0.5]
     input = (input - 0.5) / 0.5;
-
     // Assign the processed image to output
     output = input;
 }
@@ -92,20 +85,18 @@ std::vector<float> Spoofing::inference(cv::Mat input) {
 
     // Convert the final output to a vector of floats
     auto final_output = classifier_outputs->at(0).GetTensorMutableData<float>();
-    std::vector<float> output_vector;
-    for (int i = 0; i < 2; i++) {
-        output_vector.push_back(final_output[i]);
-    }; //MAKE SURE THIS IS CORRECT
+    auto dims_input3 = classifier_outputs->at(0).GetTensorTypeAndShapeInfo().GetShape();
+    std::vector<float> output_vector(final_output, final_output + dims_input3[1]);
 
     // Postprocess the output
     return postprocess(output_vector);
 }
 
-Ort::Value Spoofing::createOrtValueFromMat(const cv::Mat& mat) {
-    // Ensure the input mat is of type CV_32F
+Ort::Value Spoofing::createOrtValueFromMat(cv::Mat& mat) {
+    // Ensure the input mat is of type CV_32FC3
     cv::Mat input;
-    if (mat.type() != CV_32F) {
-        mat.convertTo(input, CV_32F);
+    if (mat.type() != CV_32FC3) {
+        mat.convertTo(input, CV_32FC3);
     } else {
         input = mat;
     }
