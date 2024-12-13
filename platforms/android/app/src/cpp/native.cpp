@@ -89,9 +89,9 @@ Java_ai_spoofing_TensorUtils_initModel(
     // convert to string
     std::string embedString(embed);
     //1. declaring character array
-    char embbederCharArray[embedString.length() + 1];
+    char embedderCharArray[embedString.length() + 1];
     //2. copying the contents of the string to char array
-    strcpy(embbederCharArray, embedString.c_str());
+    strcpy(embedderCharArray, embedString.c_str());
     //3. read model
     char *bufferEmbedder = nullptr;
     long sizeEmbedder = 0;
@@ -122,9 +122,9 @@ Java_ai_spoofing_TensorUtils_initModel(
     shared_ptr<Ort::Env> ortEnv = make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "test");
     ortEnv->CreateAndRegisterAllocator(Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault), {});
 
-    std::shared_ptr<Model> yoloModel = Model::create(yoloString, ortEnv, c, providers, false);
-    std::shared_ptr<Model> extractorModel = Model::create(extractorString, ortEnv, c, providers, false);
-    std::shared_ptr<Model> embedderModel = Model::create(embedString, ortEnv, c, providers, false);
+    std::shared_ptr<Model> yoloModel = Model::create(bufferYoloV7, sizeYoloV7, ortEnv, c, providers, false);
+    std::shared_ptr<Model> extractorModel = Model::create(bufferExtractor, sizeExtractor, ortEnv, c, providers, false);
+    std::shared_ptr<Model> embedderModel = Model::create(bufferEmbedder, sizeEmbedder, ortEnv, c, providers, false);
 
     // Assign pointers
     yoloPipeline = new YoloV7(yoloModel);
