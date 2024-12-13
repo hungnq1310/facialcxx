@@ -44,16 +44,67 @@ Java_ai_spoofing_TensorUtils_initModel(
     const char *yolo = env->GetStringUTFChars(yoloPath, 0);
     // convert to string
     std::string yoloString(yolo);
+    //1. declaring character array
+    char fhtpCharArray[blazeFaceString.length() + 1];
+    //2. copying the contents of the string to char array
+    strcpy(fhtpCharArray, yoloString.c_str());
+    //3. read model
+    char *bufferYoloV7 = nullptr;
+    long sizeYoloV7 = 0;
+    if (!(env->IsSameObject(assetManager, NULL))) {
+        AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
+        AAsset *asset = AAssetManager_open(mgr, fhtpCharArray, AASSET_MODE_UNKNOWN);
+        assert(asset != nullptr);
+
+        sizeYoloV7 = AAsset_getLength(asset);
+        bufferYoloV7 = (char *) malloc(sizeof(char) * sizeYoloV7);
+        AAsset_read(asset, bufferYoloV7, sizeYoloV7);
+        AAsset_close(asset);
+    }
 
     // Extractor Spoofing
     const char *extractor = env->GetStringUTFChars(extractorPath, 0);
     // convert to string
     std::string extractorString(extractor);
+    // 1. declaring character array
+    char extractorCharArray[extractorString.length() + 1];
+    //2. copying the contents of the string to char array
+    strcpy(extractorCharArray, extractorString.c_str());
+    //3. read model
+    char *bufferExtractor = nullptr;
+    long sizeExtractor = 0;
+    if (!(env->IsSameObject(assetManager, NULL))) {
+        AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
+        AAsset *asset = AAssetManager_open(mgr, extractorCharArray, AASSET_MODE_UNKNOWN);
+        assert(asset != nullptr);
+
+        sizeExtractor = AAsset_getLength(asset);
+        bufferExtractor = (char *) malloc(sizeof(char) * sizeExtractor);
+        AAsset_read(asset, bufferExtractor, sizeExtractor);
+        AAsset_close(asset);
+    }
 
     // Embedder Spoofing
     const char *embed = env->GetStringUTFChars(embedderPath, 0);
     // convert to string
     std::string embedString(embed);
+    //1. declaring character array
+    char embbederCharArray[embedString.length() + 1];
+    //2. copying the contents of the string to char array
+    strcpy(embbederCharArray, embedString.c_str());
+    //3. read model
+    char *bufferEmbedder = nullptr;
+    long sizeEmbedder = 0;
+    if (!(env->IsSameObject(assetManager, NULL))) {
+        AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
+        AAsset *asset = AAssetManager_open(mgr, embedderCharArray, AASSET_MODE_UNKNOWN);
+        assert(asset != nullptr);
+
+        sizeEmbedder = AAsset_getLength(asset);
+        bufferEmbedder = (char *) malloc(sizeof(char) * sizeEmbedder);
+        AAsset_read(asset, bufferEmbedder, sizeEmbedder);
+        AAsset_close(asset);
+    }
 
     // Load the model
     auto providers = Ort::GetAvailableProviders();
