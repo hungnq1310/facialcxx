@@ -170,13 +170,9 @@ Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jobject bitma
             cropFace(original, cropped_face, bbox, 256, 256);
             cvtColor(cropped_face, cropped_face, COLOR_BGR2RGB);
 
-            // Preprocess the cropped face
-            cv::Mat preprocessed_face;
-            SpoofingPipeline->preprocess(cropped_face, preprocessed_face);
-
             // Inference
             auto start = std::chrono::high_resolution_clock::now();
-            std::vector<float> probs = SpoofingPipeline->inference(preprocessed_face);
+            std::vector<float> probs = SpoofingPipeline->inference(cropped_face);
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
