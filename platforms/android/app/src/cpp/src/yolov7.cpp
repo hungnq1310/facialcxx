@@ -108,7 +108,7 @@ cv::Mat YoloV7::preprocess(
     return processed_img;
 };
 
-std::pair<std::vector<PredictResultHeadFace>, std::vector<PredictResultHeadFace>> YoloV7::infer(const cv::Mat &processed_img)
+std::pair<std::vector<PredictResultHeadFace>, std::vector<PredictResultHeadFace>> YoloV7::inference(const cv::Mat &processed_img)
 {
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     cv::Mat blob = cv::dnn::blobFromImage(processed_img, 1 / 255.0, cv::Size(640, 640), cv::Scalar(0, 0, 0), false, false);
@@ -182,7 +182,7 @@ std::pair<std::vector<PredictResultHeadFace>, std::vector<PredictResultHeadFace>
 
 void YoloV7::detect(const cv::Mat processed_img, std::vector<PredictResultHeadFace> *res)
 {
-    auto [head_output, face_output] = infer(processed_img);
+    auto [head_output, face_output] = inference(processed_img);
 
     // Map the output to the result -> HARDCODE HERE
     // for (int tensorIndex = 0; tensorIndex < 2; ++tensorIndex)

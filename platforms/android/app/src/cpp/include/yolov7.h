@@ -28,7 +28,7 @@ class YoloV7 : Pipeline {
         YoloV7(shared_ptr<Model> yolo);
         ~YoloV7();
         cv::Mat preprocess(const cv::Mat img);
-        std::pair<std::vector<PredictResultHeadFace>, std::vector<PredictResultHeadFace>> infer(const cv::Mat &processed_img);
+        std::pair<std::vector<PredictResultHeadFace>, std::vector<PredictResultHeadFace>> inference(const cv::Mat &processed_img);
         void detect(const cv::Mat processed_img, std::vector<PredictResultHeadFace> *res);
         void postprocess(const std::vector<PredictResultHeadFace> &output, std::vector<PredictResultHeadFace> *res);
     protected:
