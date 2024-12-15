@@ -184,14 +184,20 @@ Java_ai_spoofing_TensorUtils_initModel(
 }
 
 extern "C"
-JNIEXPORT jobject JNICALL
-Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jobject bitmap) {
+JNIEXPORT jobjectArray JNICALL
+Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jbyteArray imageArray) {
 
-    // From mobile to OpenCV Mat
-    Mat input_mat;
-    bitmapToMat(env, bitmap, input_mat, false);
-    cvtColor(input_mat, input_mat, COLOR_RGBA2BGR);
+    // Get the length of the jbyteArray
+    jsize length = env->GetArrayLength(imageArray);
+    // Allocate a buffer to hold the bytes
+    jbyte *bufferImage = env->GetByteArrayElements(imageArray, 0);
+    // Convert the jbyte buffer to a cv::Mat
+    // Decode data into Mat
+    cv::Mat input_mat;
+    input_mat = cv::imdecode(cv::Mat(1, length, CV_8UC1, bufferImage), cv::IMREAD_UNCHANGED);
+    cvtColor(input_mat, input_mat, COLOR_RGBA2RGB);
 
+    // Inference
     cv::Mat original = input_mat.clone();
     cv::Mat processed_img = yoloPipeline->preprocess(input_mat);
     std::vector<PredictResultHeadFace> res_yolo;
