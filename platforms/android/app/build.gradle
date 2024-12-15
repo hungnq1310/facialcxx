@@ -8,8 +8,8 @@ android {
 
     defaultConfig {
         applicationId "ai.spoofing"
-        minSdkVersion 33
-        targetSdkVersion 34
+        minSdkVersion 24
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
 
@@ -79,7 +79,7 @@ android {
 dependencies {
     // CameraX core library using the camera2 implementation
     def camerax_version = "1.2.1"
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.8'
     // The following line is optional, as the core library is included indirectly by camera-camera2
     implementation "androidx.camera:camera-camera2:${camerax_version}"
     // If you want to additionally use the CameraX Lifecycle library
