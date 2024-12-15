@@ -145,32 +145,19 @@ public class MainActivity extends AppCompatActivity {
                 is.read(bytes);
                 is.close();
 
-                // ... (Set bitmap to ImageView)
-                myview = findViewById(R.id.MainImageView);
+                //process image and display
+                byte[] processed_bytes = processed_bytes(bytes, true);
 
-                // Bitmap bitmap = BitmapFactory.decodeByteArray(processed_bytes, 0, processed_bytes.length);
-
-                // Bitmap bitmap = BitmapFactory.decodeStream(is);
                 //inference
-                processImage(bytes);
-
-
+                processImage(processed_bytes);
             }
         } catch (IOException e) {
             Log.e(TAG, "Error loading asset", e);
-            }
             return outputFile.getAbsolutePath();
-        } catch (IOException e) {
-            Log.e(TAG, "Error loading asset", e);
-            return null;
         }
-            return outputFile.getAbsolutePath();
-        } catch (IOException e) {
-            Log.e(TAG, "Error loading asset", e);
-            return null;
     }
 
-    private void processImage(Bitmap image) {
+    private void processImage(byte[] image) {
         checkClearUI();
         new Thread(() -> {
             // ... (Process inference results and update UI)
@@ -181,7 +168,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
     }
-     
+
+        
     private void checkClearUI(){
         binding.detectedItemValue3.setVisibility(View.GONE);
         binding.detectedItemValue2.setVisibility(View.GONE);
@@ -248,7 +236,62 @@ public class MainActivity extends AppCompatActivity {
         return labels;
     };
 
+    private byte[] processed_bytes(byte[] data, boolean display_image) {
+        try {
+            // Get the rotation from Exif metadata
+            ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(data));
+            int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
 
+            // Determine the rotation in degrees
+            int rotationDegrees = 0;
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    rotationDegrees = 90;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    rotationDegrees = 180;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    rotationDegrees = 270;
+                    break;
+            }
+
+            // Convert byte[] to Bitmap
+            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+
+            // Rotate the Bitmap if needed
+            Bitmap rotatedBitmap = rotateBitmap(bitmap, rotationDegrees);
+
+            // Use the rotatedBitmap (e.g., display it or save it)
+            // Example: Display in an ImageView
+            if (display_image){
+                displayImage(rotatedBitmap);
+            }
+
+            // Convert the rotated image as byte array
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream); // reserve full quality
+            byte[] rotatedData = outputStream.toByteArray();
+
+            // Send rotatedData for model inference
+            return rotatedData;
+        } catch (IOException e) {
+            Log.e(TAG, "Error processing image", e);
+        }
+        return data;
+    }
+
+    
+    // Helper function to rotate a Bitmap
+    private Bitmap rotateBitmap(Bitmap source, float angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+    }
+
+    private void displayImage(Bitmap bitmap) {
+        findViewById(R.id.MainImageView).setImageBitmap(bitmap);
+    }
 
     // update UI
     private void Inference(byte[] byteArray, float percentage) {
