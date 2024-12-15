@@ -30,6 +30,57 @@ extern "C" {
 YoloV7* yoloPipeline;
 Spoofing* SpoofingPipeline;
 
+// Convert a mat to Bitmap
+// Reference https://github.com/opencv/opencv/blob/17234f82d025e3bbfbf611089637e5aa2038e7b8/modules/java/generator/src/cpp/utils.cpp
+void matToBitmap(JNIEnv *env, Mat src, jobject bitmap, jboolean needPremultiplyAlpha) {
+    AndroidBitmapInfo info;
+    void *pixels = 0;
+
+    try {
+        CV_Assert(AndroidBitmap_getInfo(env, bitmap, &info) >= 0);
+        CV_Assert(info.format == ANDROID_BITMAP_FORMAT_RGBA_8888 ||
+                  info.format == ANDROID_BITMAP_FORMAT_RGB_565);
+        CV_Assert(src.dims == 2);
+        CV_Assert(info.height == (uint32_t) src.rows);
+        CV_Assert(info.width == (uint32_t) src.cols);
+        CV_Assert(src.type() == CV_8UC1 || src.type() == CV_8UC3 || src.type() == CV_8UC4);
+        CV_Assert(AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0);
+        CV_Assert(pixels);
+        if (info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {
+            Mat tmp(info.height, info.width, CV_8UC4, pixels);
+            if (src.type() == CV_8UC1) {
+                cvtColor(src, tmp, COLOR_GRAY2RGBA);
+            } else if (src.type() == CV_8UC3) {
+                cvtColor(src, tmp, COLOR_RGB2RGBA);
+            } else if (src.type() == CV_8UC4) {
+                if (needPremultiplyAlpha) cvtColor(src, tmp, COLOR_RGBA2mRGBA);
+                else src.copyTo(tmp);
+            }
+        } else {
+            // info.format == ANDROID_BITMAP_FORMAT_RGB_565
+            Mat tmp(info.height, info.width, CV_8UC2, pixels);
+            if (src.type() == CV_8UC1) {
+                cvtColor(src, tmp, COLOR_GRAY2BGR565);
+            } else if (src.type() == CV_8UC3) {
+                cvtColor(src, tmp, COLOR_RGB2BGR565);
+            } else if (src.type() == CV_8UC4) {
+                cvtColor(src, tmp, COLOR_RGBA2BGR565);
+            }
+        }
+        AndroidBitmap_unlockPixels(env, bitmap);
+        return;
+    } catch (const cv::Exception &e) {
+        AndroidBitmap_unlockPixels(env, bitmap);
+        jclass je = env->FindClass("java/lang/Exception");
+        env->ThrowNew(je, e.what());
+        return;
+    } catch (...) {
+        AndroidBitmap_unlockPixels(env, bitmap);
+        jclass je = env->FindClass("java/lang/Exception");
+        env->ThrowNew(je, "Unknown exception in JNI code {nMatToBitmap}");
+        return;
+    }
+}
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -45,7 +96,7 @@ Java_ai_spoofing_TensorUtils_initModel(
     // convert to string
     std::string yoloString(yolo);
     //1. declaring character array
-    char fhtpCharArray[blazeFaceString.length() + 1];
+    char fhtpCharArray[yoloString.length() + 1];
     //2. copying the contents of the string to char array
     strcpy(fhtpCharArray, yoloString.c_str());
     //3. read model
