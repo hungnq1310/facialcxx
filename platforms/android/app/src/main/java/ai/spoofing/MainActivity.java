@@ -113,7 +113,6 @@ public class MainActivity extends AppCompatActivity {
         // Init model
         try {
             labelData = readLabels();
-//            TensorUtils.initModel(getAssets(), readYolo(), readExtractor(), readEmbedder());
             String yoloAssets = "weights/yolov7_hf_v1.onnx";
             String extractorAssets = "weights/extractor.onnx";
             String embedderAssets = "weights/embedder.onnx";
@@ -177,12 +176,14 @@ public class MainActivity extends AppCompatActivity {
 
                 // Load image into ImageView
                 InputStream is = getAssets().open("tests/" + assetFilename);
-                Bitmap bitmap = BitmapFactory.decodeStream(is);
-                // ... (Set bitmap to ImageView)
-                myview = findViewById(R.id.MainImageView);
-                ((ImageView) myview).setImageBitmap(bitmap);
-                //inference
-                processImage(bitmap);
+                //read byte from input stream
+                byte[] bytes = new byte[is.available()];
+                is.read(bytes);
+                is.close();
+
+                Bitmap rotated_bitmap = processed_bytes(bytes, true);
+                processImage(rotated_bitmap);
+
             } else if (assetFilename.endsWith(".mp4")) {
                 // Load video into VideoView
                 String videoPath = getUriFromAsset(assetFilename);
@@ -200,6 +201,56 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.e(TAG, "Error loading asset", e);
         }
+    }
+
+    private Bitmap processed_bytes(byte[] data, boolean display_image) {
+        try {
+            // Get the rotation from Exif metadata
+            ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(data));
+            int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+
+            // Determine the rotation in degrees
+            int rotationDegrees = 0;
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    rotationDegrees = 90;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    rotationDegrees = 180;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    rotationDegrees = 270;
+                    break;
+            }
+
+            // Convert byte[] to Bitmap
+            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+
+            // Rotate the Bitmap if needed
+            Bitmap rotatedBitmap = rotateBitmap(bitmap, rotationDegrees);
+
+            // Use the rotatedBitmap (e.g., display it or save it)
+            // Example: Display in an ImageView
+            if (display_image){
+                displayImage(rotatedBitmap);
+            }
+            return rotatedBitmap;
+
+        } catch (IOException e) {
+            Log.e(TAG, "Error processing image", e);
+        }
+        return null;
+    }
+
+    // Helper function to rotate a Bitmap
+    private Bitmap rotateBitmap(Bitmap source, float angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
+    }
+
+    private void displayImage(Bitmap bitmap) {
+        ((ImageView)findViewById(R.id.MainImageView)).setImageBitmap(bitmap);
     }
 
     private String getUriFromAsset(String assetFilename) throws FileNotFoundException {
