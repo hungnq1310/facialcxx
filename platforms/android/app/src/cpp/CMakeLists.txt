@@ -16,17 +16,17 @@ set(LIB_OPENCV_INCLUDES ${OpenCV_DIR}/jni/include)
 add_library( lib_ortcxx SHARED IMPORTED )
 set_target_properties(
     lib_ortcxx PROPERTIES 
-    IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/ortcxx/libs/${ANDROID_ABI}/libortcxx.so
+    IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/libs/ortcxx/libs/${ANDROID_ABI}/libortcxx.so
 )
-set(LIB_ORTCXX_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/ortcxx/include)
+set(LIB_ORTCXX_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/libs/ortcxx/include)
 
 # Onnxruntime
 add_library( lib_onnxruntime SHARED IMPORTED )
 set_target_properties(
     lib_onnxruntime PROPERTIES 
-    IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/onnxruntime/jni/${ANDROID_ABI}/libonnxruntime.so
+    IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/libs/onnxruntime/jni/${ANDROID_ABI}/libonnxruntime.so
 )
-set(LIB_ONNXRUNTIME_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime/headers)
+set(LIB_ONNXRUNTIME_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/libs/onnxruntime/headers)
 
 # Debug
 message(STATUS ${LIB_OPENCV_INCLUDES})
