@@ -127,7 +127,6 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_ai_spoofing_TensorUtils_initModel(
     JNIEnv *env, jclass clazz, jobject assetManager,
-    // jstring blazeFacePath,
     jstring yoloPath,
     jstring extractorPath,
     jstring embedderPath
@@ -137,16 +136,67 @@ Java_ai_spoofing_TensorUtils_initModel(
     const char *yolo = env->GetStringUTFChars(yoloPath, 0);
     // convert to string
     std::string yoloString(yolo);
+    //1. declaring character array
+    char fhtpCharArray[yoloString.length() + 1];
+    //2. copying the contents of the string to char array
+    strcpy(fhtpCharArray, yoloString.c_str());
+    //3. read model
+    char *bufferYoloV7 = nullptr;
+    long sizeYoloV7 = 0;
+    if (!(env->IsSameObject(assetManager, NULL))) {
+        AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
+        AAsset *asset = AAssetManager_open(mgr, fhtpCharArray, AASSET_MODE_UNKNOWN);
+        assert(asset != nullptr);
+
+        sizeYoloV7 = AAsset_getLength(asset);
+        bufferYoloV7 = (char *) malloc(sizeof(char) * sizeYoloV7);
+        AAsset_read(asset, bufferYoloV7, sizeYoloV7);
+        AAsset_close(asset);
+    }
 
     // Extractor Spoofing
     const char *extractor = env->GetStringUTFChars(extractorPath, 0);
     // convert to string
     std::string extractorString(extractor);
+    // 1. declaring character array
+    char extractorCharArray[extractorString.length() + 1];
+    //2. copying the contents of the string to char array
+    strcpy(extractorCharArray, extractorString.c_str());
+    //3. read model
+    char *bufferExtractor = nullptr;
+    long sizeExtractor = 0;
+    if (!(env->IsSameObject(assetManager, NULL))) {
+        AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
+        AAsset *asset = AAssetManager_open(mgr, extractorCharArray, AASSET_MODE_UNKNOWN);
+        assert(asset != nullptr);
+
+        sizeExtractor = AAsset_getLength(asset);
+        bufferExtractor = (char *) malloc(sizeof(char) * sizeExtractor);
+        AAsset_read(asset, bufferExtractor, sizeExtractor);
+        AAsset_close(asset);
+    }
 
     // Embedder Spoofing
     const char *embed = env->GetStringUTFChars(embedderPath, 0);
     // convert to string
     std::string embedString(embed);
+    //1. declaring character array
+    char embedderCharArray[embedString.length() + 1];
+    //2. copying the contents of the string to char array
+    strcpy(embedderCharArray, embedString.c_str());
+    //3. read model
+    char *bufferEmbedder = nullptr;
+    long sizeEmbedder = 0;
+    if (!(env->IsSameObject(assetManager, NULL))) {
+        AAssetManager *mgr = AAssetManager_fromJava(env, assetManager);
+        AAsset *asset = AAssetManager_open(mgr, embedderCharArray, AASSET_MODE_UNKNOWN);
+        assert(asset != nullptr);
+
+        sizeEmbedder = AAsset_getLength(asset);
+        bufferEmbedder = (char *) malloc(sizeof(char) * sizeEmbedder);
+        AAsset_read(asset, bufferEmbedder, sizeEmbedder);
+        AAsset_close(asset);
+    }
 
     // Load the model
     auto providers = Ort::GetAvailableProviders();
@@ -158,13 +208,21 @@ Java_ai_spoofing_TensorUtils_initModel(
     c["inter_ops_threads"] = 1;
     c["intra_ops_threads"] = 1;
     c["graph_optimization_level"] = 1;
+    c["session.use_env_allocators"] = true;
 
     // Load the model with share env and allocator
     std::shared_ptr<Ort::Env> ortEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "test");
+    ortEnv->CreateAndRegisterAllocator(Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault), {});
 
-    std::shared_ptr<Model> yoloModel = Model::create(yoloString, ortEnv, c, providers, false);
-    std::shared_ptr<Model> extractorModel = Model::create(extractorString, ortEnv, c, providers, false);
-    std::shared_ptr<Model> embedderModel = Model::create(embedString, ortEnv, c, providers, false);
+    std::shared_ptr<Model> yoloModel = Model::create(
+        bufferYoloV7, sizeYoloV7, ortEnv, c, providers, false
+    );
+    std::shared_ptr<Model> extractorModel = Model::create(
+        bufferExtractor, sizeExtractor, ortEnv, c, providers, false
+    );
+    std::shared_ptr<Model> embedderModel = Model::create(
+        bufferEmbedder, sizeEmbedder, ortEnv, c, providers, false
+    );
 
     // Assign pointers
     // blazefacePipeline = new BlazeFace(blazefaceModel);
@@ -176,11 +234,11 @@ Java_ai_spoofing_TensorUtils_initModel(
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jobject bitmap) {
+Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jobject imageData) {
 
     // From mobile to OpenCV Mat
     Mat input_mat;
-    bitmapToMat(env, bitmap, input_mat, false);
+    bitmapToMat(env, imageData, input_mat, false);
     cvtColor(input_mat, input_mat, COLOR_RGBA2BGR);
 
     cv::Mat original = input_mat.clone();
@@ -199,13 +257,17 @@ Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jobject bitma
         for (int i = 0; i < res_yolo.size(); i++) {
 
             PredictResultHeadFace res = res_yolo[i];
-//            float score = (res.score_face == 0.0) ? res.score_head : res.score_face;
+
+            float width = res.xmax - res.xmin;
+            float height = res.ymax - res.ymin;
+            float pad_x = width * 1 - width;
+            float pad_y = height * 1 - height;
 
             cv::Rect bbox = cv::Rect(
-                static_cast<int>(std::round(res.xmin)),
-                static_cast<int>(std::round(res.ymin)),
-                static_cast<int>(std::round(res.xmax - res.xmin)),
-                static_cast<int>(std::round(res.ymax - res.ymin))
+                static_cast<int>(std::round(res.xmin - pad_x / 2)),
+                static_cast<int>(std::round(res.ymin - pad_y / 2)),
+                static_cast<int>(std::round(width * 1)),
+                static_cast<int>(std::round(height * 1))
             );
 
             cv::Mat cropped_face;
