@@ -14,6 +14,8 @@ import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -42,6 +44,8 @@ import androidx.core.content.ContextCompat;
 
 import kotlinx.coroutines.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -109,7 +113,12 @@ public class MainActivity extends AppCompatActivity {
         // Init model
         try {
             labelData = readLabels();
-            TensorUtils.initModel(getAssets(), readYolo(), readExtractor(), readEmbedder());
+//            TensorUtils.initModel(getAssets(), readYolo(), readExtractor(), readEmbedder());
+            String yoloAssets = "weights/yolov7_hf_v1.onnx";
+            String extractorAssets = "weights/extractor.onnx";
+            String embedderAssets = "weights/embedder.onnx";
+            TensorUtils.initModel(getAssets(), yoloAssets, extractorAssets, embedderAssets);
+
         } catch (Exception e) {
             Log.e(TAG, "Error initializing models", e);
         }
@@ -174,7 +183,6 @@ public class MainActivity extends AppCompatActivity {
                 ((ImageView) myview).setImageBitmap(bitmap);
                 //inference
                 processImage(bitmap);
-
             } else if (assetFilename.endsWith(".mp4")) {
                 // Load video into VideoView
                 String videoPath = getUriFromAsset(assetFilename);
@@ -266,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
                 if (frame != null) {
                     // Create a Result object and update the UI
                     float percentage = (float) currentTime / videoDuration * 100f;
-                    Inference(frame, percentage);
+//                    Inference(frame, percentage);
                 }
                 else  {
                     Log.d("Frame", "null");
@@ -310,36 +318,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-//    private void updateUI(Result result, float percentage) {
-//        if (result.detectedScore.isEmpty()) {
-//            return ;
-//        }
-//
-//        runOnUiThread(() -> {
-////            int probs = (int) (result.detectedScore.get(0) * 100);
-//            Log.d("Percentage", String.valueOf((int) percentage));
-//            binding.percentMeter.setProgress((int) percentage, true);
-//
-//            String label = result.detectedIndices.get(0) == 0 ? labelData.get(0) : labelData.get(1);
-//            binding.detectedItem1.setText(label);
-//            binding.detectedItemValue1.setText(String.format("%.4f%%", result.detectedScore.get(0) * 100));
-//
-//
-//            if (result.detectedIndices.size() > 1) {
-//                String label2 = result.detectedIndices.get(1) == 0 ? labelData.get(0) : labelData.get(1);
-//                binding.detectedItem2.setText(label2);
-//                binding.detectedItemValue2.setText(String.format("%.4f%%", result.detectedScore.get(1) * 100));
-//            }
-//
-//            if (result.detectedIndices.size() > 2) {
-//                String label3 = result.detectedIndices.get(2) == 0 ? labelData.get(0) : labelData.get(1);
-//                binding.detectedItem3.setText(label3);
-//                binding.detectedItemValue3.setText(String.format("%.4f%%", result.detectedScore.get(2) * 100));
-//            }
-//
-//            binding.inferenceTimeValue.setText(result.processTimeMs + "ms");
-//        });
-//    }
     private void updateUI(DetectionResult[] results, long processTimeMs, float percentage) {
         if (results.length == 0) {
             return ;
@@ -396,108 +374,6 @@ public class MainActivity extends AppCompatActivity {
         return labels;
     };
 
-    private String readYolo() throws Exception {
-//       // Step 2: Get input stream from resource
-
-        File outputFile = new File(getFilesDir(), "yolov7_hf_v1.onnx");
-        // Step 3: Define output file in internal storage
-        try {
-            InputStream inputStream = getResources().openRawResource(R.raw.yolov7_hf_v1);
-            OutputStream outputStream = new FileOutputStream(outputFile);
-            // Buffer size for copying
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                // Use the API level 33 specific code here
-                inputStream.transferTo(outputStream);
-            }
-            else {
-                AssetFileDescriptor afd = getResources().openRawResourceFd(R.raw.yolov7_hf_v1);
-                long totalSize = afd.getLength();
-                afd.close();
-                Log.d("Total size", String.valueOf(totalSize));
-                byte[] buffer = new byte[(int) totalSize];  // 1 KB buffer size
-                int bytesRead;
-
-                // Read from input stream and write to output stream
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Error loading asset", e);
-            return null;
-        }
-        // Step 4: Return the absolute path of the copied file
-        return outputFile.getAbsolutePath();
-    }
-
-    private String readEmbedder() throws Exception {
-//        // Step 2: Get input stream from resource
-
-
-        File outputFile = new File(getFilesDir(), "embedder.onnx");
-
-        try {
-            InputStream inputStream = getResources().openRawResource(R.raw.embedder);
-            OutputStream outputStream = new FileOutputStream(outputFile);
-            // Buffer size for copying
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                // Use the API level 33 specific code here
-                inputStream.transferTo(outputStream);
-            }
-            else {
-                AssetFileDescriptor afd = getResources().openRawResourceFd(R.raw.embedder);
-                long totalSize = afd.getLength();
-                afd.close();
-                byte[] buffer = new byte[(int) totalSize];  // 1 KB buffer size
-                int bytesRead;
-
-                // Read from input stream and write to output stream
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Error loading asset", e);
-            return null;
-        }
-        // Step 4: Return the absolute path of the copied file
-        return outputFile.getAbsolutePath();
-    }
-
-    private String readExtractor() throws Exception {
-        // Step 2: Get input stream from resource
-
-
-        File outputFile = new File(getFilesDir(), "extractor.onnx");
-
-        // Step 3: Define output file in internal storage
-        try {
-            InputStream inputStream = getResources().openRawResource(R.raw.extractor);
-            OutputStream outputStream = new FileOutputStream(outputFile);
-            // Buffer size for copying
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                // Use the API level 33 specific code here
-                inputStream.transferTo(outputStream);
-            }
-            else {
-                AssetFileDescriptor afd = getResources().openRawResourceFd(R.raw.extractor);
-                long totalSize = afd.getLength();
-                afd.close();
-                byte[] buffer = new byte[(int) totalSize];  // 1 KB buffer size
-                int bytesRead;
-
-                // Read from input stream and write to output stream
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Error loading asset", e);
-            return null;
-        }
-        // Step 4: Return the absolute path of the copied file
-        return outputFile.getAbsolutePath();
-    }
 
     // update UI
     private void Inference(Bitmap frame, float percentage) {
