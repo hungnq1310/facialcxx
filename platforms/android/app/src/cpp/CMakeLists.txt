@@ -58,7 +58,7 @@ add_library(
     ${LIB_NAME} 
     SHARED 
     ${LIB_SRC_FILES} ${LIB_HEADERS} #1 
-    native.cpp
+    native.cpp ${LIB_SRC_DIR}/PillowResize.cc
 )
 target_link_libraries(
     ${LIB_NAME} 

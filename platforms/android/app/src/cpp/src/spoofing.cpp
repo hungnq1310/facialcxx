@@ -4,6 +4,7 @@
 #include <ortcxx/pipeline.h>
 #include <opencv2/opencv.hpp>
 #include <onnxruntime_cxx_api.h>
+#include <PillowResize.hpp>
 
 using namespace cv;
 using namespace std;
@@ -23,7 +24,8 @@ void Spoofing::preprocess(cv::Mat input, cv::Mat &output) {
     cv::cvtColor(input, input, cv::COLOR_BGR2RGB);
     //resize
     cv::Mat resized_image;
-    cv::resize(input, resized_image, cv::Size(256, 256));
+//    cv::resize(input, resized_image, cv::Size(256, 256));
+    resized_image = PillowResize::resize(input, cv::Size(256, 256), 2);
     // Normalize the image 0- 1
     resized_image.convertTo(resized_image, CV_32F, 1.0 / 255.0);
     // NEED TO FIX 0.5 / 0.5 ?
