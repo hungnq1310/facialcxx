@@ -100,20 +100,21 @@ std::vector<float> Spoofing::inference(cv::Mat input) {
     return postprocess(output_vector);
 }
 
-Ort::Value Spoofing::createOrtValueFromMat(const cv::Mat& mat) {
-    // Implement conversion from cv::Mat to Ort::Value
-    // Example: create a tensor from the image data
-    std::vector<int64_t> dims = {1, mat.channels(), mat.rows, mat.cols}; //!FIX HERRE
-    size_t tensor_size = mat.total() * mat.elemSize();
+Ort::Value Spoofing::createOrtValueFromMat(cv::Mat& mat) {
+    //* USE THIS INSTEAD CREATE FROM SCRATCH
+    cv::Mat blob = cv::dnn::blobFromImage(mat, 1.0, cv::Size(256, 256), (0, 0, 0), false, false, CV_32F);
+    size_t input_tensor_size = blob.total();
+    // Get the dimensions of the input mat
+    std::vector<int64_t> dims = {1, mat.channels(), mat.rows, mat.cols};
+    // Create an Ort::MemoryInfo object
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    Ort::Value tensor = Ort::Value::CreateTensor<float>(
+    return Ort::Value::CreateTensor<float>(
         memory_info, 
-        const_cast<float*>(mat.ptr<float>()), 
-        tensor_size, 
+        (float*)blob.data, 
+        input_tensor_size, 
         dims.data(), 
         dims.size()
     );
-    return tensor;
 }
 
 
