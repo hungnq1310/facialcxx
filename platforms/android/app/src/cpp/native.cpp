@@ -234,12 +234,19 @@ Java_ai_spoofing_TensorUtils_initModel(
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jobject imageData) {
+Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jbyteArray imageData) {
+    // Get the length of the byte array
+    jsize length = env->GetArrayLength(imageData);
+    // Allocate a buffer to hold the bytes
+    jbyte *bufferImage = env->GetByteArrayElements(imageData, 0);
+    // Decode data into Mat
+    cv::Mat input_mat;
+    input_mat = cv::imdecode(cv::Mat(1, length, CV_8UC1, bufferImage), cv::IMREAD_UNCHANGED);
 
-    // From mobile to OpenCV Mat
-    Mat input_mat;
-    bitmapToMat(env, imageData, input_mat, false);
-    cvtColor(input_mat, input_mat, COLOR_RGBA2BGR);
+    // From Bitmap to OpenCV Mat
+    // Mat input_mat;
+    // bitmapToMat(env, imageData, input_mat, false);
+    // cvtColor(input_mat, input_mat, COLOR_RGBA2BGR);
 
     cv::Mat original = input_mat.clone();
     cv::Mat processed_img = yoloPipeline->preprocess(input_mat);
@@ -258,29 +265,27 @@ Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jobject image
 
             PredictResultHeadFace res = res_yolo[i];
 
+            float padding_k = 0.8;
+
             float width = res.xmax - res.xmin;
             float height = res.ymax - res.ymin;
-            float pad_x = width * 1 - width;
-            float pad_y = height * 1 - height;
+            float pad_x = width * padding_k - width;
+            float pad_y = height * padding_k - height;
 
             cv::Rect bbox = cv::Rect(
                 static_cast<int>(std::round(res.xmin - pad_x / 2)),
                 static_cast<int>(std::round(res.ymin - pad_y / 2)),
-                static_cast<int>(std::round(width * 1)),
-                static_cast<int>(std::round(height * 1))
+                static_cast<int>(std::round(width * padding_k)),
+                static_cast<int>(std::round(height * padding_k))
             );
 
             cv::Mat cropped_face;
             cropFace(original, cropped_face, bbox, 256, 256);
             cvtColor(cropped_face, cropped_face, COLOR_BGR2RGB);
 
-            // Preprocess the cropped face
-            cv::Mat preprocessed_face;
-            SpoofingPipeline->preprocess(cropped_face, preprocessed_face);
-
             // Inference
             auto start = std::chrono::high_resolution_clock::now();
-            std::vector<float> probs = SpoofingPipeline->inference(preprocessed_face);
+            std::vector<float> probs = SpoofingPipeline->inference(cropped_face);
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
