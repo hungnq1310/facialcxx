@@ -11,6 +11,6 @@ public class TensorUtils {
         String extractorPath,
         String embedderPath
     );
-    public static  native DetectionResult[] checkspoof(Bitmap imageData);
+    public static  native DetectionResult[] checkspoof(byte[] imageData);
 }
 

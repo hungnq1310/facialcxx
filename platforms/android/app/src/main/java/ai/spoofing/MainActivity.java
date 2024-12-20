@@ -181,9 +181,10 @@ public class MainActivity extends AppCompatActivity {
                 is.read(bytes);
                 is.close();
 
-                Bitmap rotated_bitmap = processed_bytes(bytes, true);
-                processImage(rotated_bitmap);
-
+//                Bitmap rotated_bitmap = processed_bytes(bytes, true);
+                byte[] proced_bytes = processed_bytes(bytes, true);
+                //inference
+                processImage(proced_bytes);
             } else if (assetFilename.endsWith(".mp4")) {
                 // Load video into VideoView
                 String videoPath = getUriFromAsset(assetFilename);
@@ -203,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private Bitmap processed_bytes(byte[] data, boolean display_image) {
+    private byte[] processed_bytes(byte[] data, boolean display_image) {
         try {
             // Get the rotation from Exif metadata
             ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(data));
@@ -234,12 +235,18 @@ public class MainActivity extends AppCompatActivity {
             if (display_image){
                 displayImage(rotatedBitmap);
             }
-            return rotatedBitmap;
 
+//             Convert the rotated image as byte array
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream); // reserve full quality
+            byte[] rotatedData = outputStream.toByteArray();
+
+            // Send rotatedData for model inference
+            return rotatedData;
         } catch (IOException e) {
             Log.e(TAG, "Error processing image", e);
         }
-        return null;
+       return data;
     }
 
     // Helper function to rotate a Bitmap
@@ -287,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void processImage(Bitmap image) {
+    private void processImage(byte[] image) {
         checkClearUI();
         new Thread(() -> {
             // ... (Process inference results and update UI)
@@ -339,8 +346,6 @@ public class MainActivity extends AppCompatActivity {
                 throw new RuntimeException(e);
             }
         }).start();
-
-
     }
 
     private void checkClearUI(){
@@ -427,11 +432,11 @@ public class MainActivity extends AppCompatActivity {
 
 
     // update UI
-    private void Inference(Bitmap frame, float percentage) {
+    private void Inference(byte[] frame, float percentage) {
 
         long time = System.currentTimeMillis();
         // Run inference on the frame
-        DetectionResult[] detectionResults = TensorUtils.checkspoof(frame);
+        DetectionResult[] detectionResults = TensorUtils.checkspoof(frame, getBaseContext());
         long processTimeMs = System.currentTimeMillis() - time;
 
         if (detectionResults != null) {
