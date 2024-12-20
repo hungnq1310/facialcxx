@@ -78,7 +78,7 @@ std::vector<float> Spoofing::inference(cv::Mat input) {
     );
 
     // Get the second output from the extractor
-    auto second_output = std::move(extract_outputs->at(0));
+    auto second_output = std::move(extract_outputs->at(1));
 
     // Run the classifier model with the second output
     std::vector<Ort::Value> classifier_inputs;
