@@ -436,7 +436,7 @@ public class MainActivity extends AppCompatActivity {
 
         long time = System.currentTimeMillis();
         // Run inference on the frame
-        DetectionResult[] detectionResults = TensorUtils.checkspoof(frame, getBaseContext());
+        DetectionResult[] detectionResults = TensorUtils.checkspoof(frame);
         long processTimeMs = System.currentTimeMillis() - time;
 
         if (detectionResults != null) {
