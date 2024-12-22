@@ -181,10 +181,16 @@ public class MainActivity extends AppCompatActivity {
                 is.read(bytes);
                 is.close();
 
-//                Bitmap rotated_bitmap = processed_bytes(bytes, true);
-                byte[] proced_bytes = processed_bytes(bytes, true);
-                //inference
-                processImage(proced_bytes);
+                // get rotation degree
+                int rotationDegrees = get_rotation_degree(bytes);
+
+                // Convert byte[] to Bitmap, rotate and display image
+                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                Bitmap rotatedBitmap = rotateBitmap(bitmap, rotationDegrees);
+                displayImage(rotatedBitmap);
+
+                // Main inference
+                processImage(bytes, rotationDegrees);
             } else if (assetFilename.endsWith(".mp4")) {
                 // Load video into VideoView
                 String videoPath = getUriFromAsset(assetFilename);
@@ -204,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private byte[] processed_bytes(byte[] data, boolean display_image) {
+    private int get_rotation_degree(byte[] data) {
         try {
             // Get the rotation from Exif metadata
             ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(data));
@@ -223,30 +229,11 @@ public class MainActivity extends AppCompatActivity {
                     rotationDegrees = 270;
                     break;
             }
-
-            // Convert byte[] to Bitmap
-            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-
-            // Rotate the Bitmap if needed
-            Bitmap rotatedBitmap = rotateBitmap(bitmap, rotationDegrees);
-
-            // Use the rotatedBitmap (e.g., display it or save it)
-            // Example: Display in an ImageView
-            if (display_image){
-                displayImage(rotatedBitmap);
-            }
-
-//             Convert the rotated image as byte array
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream); // reserve full quality
-            byte[] rotatedData = outputStream.toByteArray();
-
-            // Send rotatedData for model inference
-            return rotatedData;
+            return rotationDegrees;
         } catch (IOException e) {
             Log.e(TAG, "Error processing image", e);
         }
-       return data;
+        return 0;
     }
 
     // Helper function to rotate a Bitmap
@@ -294,14 +281,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void processImage(byte[] image) {
+    private void processImage(byte[] image, int rotationDegrees) {
         checkClearUI();
         new Thread(() -> {
             // ... (Process inference results and update UI)
             if (image != null) {
                 // Create a Result object and update the UI
                 float percentage =  100;
-                Inference(image, percentage);
+                Inference(image, rotationDegrees, percentage);
             }
         }).start();
     }
@@ -432,11 +419,11 @@ public class MainActivity extends AppCompatActivity {
 
 
     // update UI
-    private void Inference(byte[] frame, float percentage) {
+    private void Inference(byte[] frame, int rotationDegrees, float percentage) {
 
         long time = System.currentTimeMillis();
         // Run inference on the frame
-        DetectionResult[] detectionResults = TensorUtils.checkspoof(frame);
+        DetectionResult[] detectionResults = TensorUtils.checkspoof(frame, rotationDegrees);
         long processTimeMs = System.currentTimeMillis() - time;
 
         if (detectionResults != null) {
