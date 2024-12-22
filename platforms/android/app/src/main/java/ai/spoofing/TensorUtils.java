@@ -4,6 +4,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.util.Log;
 
+
 public class TensorUtils {
     public static native void initModel(
         AssetManager assetManager,
@@ -11,6 +12,6 @@ public class TensorUtils {
         String extractorPath,
         String embedderPath
     );
-    public static  native DetectionResult[] checkspoof(byte[] imageData);
+    public static  native DetectionResult[] checkspoof(byte[] imageData, int rotationDegree);
 }
 

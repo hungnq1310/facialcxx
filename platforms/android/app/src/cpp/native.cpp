@@ -31,7 +31,11 @@ extern "C" {
 YoloV7* yoloPipeline;
 Spoofing* SpoofingPipeline;
 
-
+std::map<int, int> EXIF_ORIENTATION_2_OPENCV_ROTATION = {
+    {90, cv::ROTATE_90_CLOCKWISE},
+    {180, cv::ROTATE_180},
+    {270, cv::ROTATE_90_COUNTERCLOCKWISE}
+};
 
 // Convert the bitmap to OpenCV Mat
 // Reference https://github.com/opencv/opencv/blob/17234f82d025e3bbfbf611089637e5aa2038e7b8/modules/java/generator/src/cpp/utils.cpp
@@ -234,7 +238,7 @@ Java_ai_spoofing_TensorUtils_initModel(
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jbyteArray imageData) {
+Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jbyteArray imageData, jint rotationDegree) {
     // Get the length of the byte array
     jsize length = env->GetArrayLength(imageData);
     // Allocate a buffer to hold the bytes
@@ -242,6 +246,8 @@ Java_ai_spoofing_TensorUtils_checkspoof(JNIEnv *env, jclass clazz, jbyteArray im
     // Decode data into Mat
     cv::Mat input_mat;
     input_mat = cv::imdecode(cv::Mat(1, length, CV_8UC1, bufferImage), cv::IMREAD_UNCHANGED);
+    if (rotationDegree != 0)
+        cv::rotate(input_mat, input_mat, EXIF_ORIENTATION_2_OPENCV_ROTATION[rotationDegree]);
 
     // From Bitmap to OpenCV Mat
     // Mat input_mat;
